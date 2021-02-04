@@ -1,0 +1,4 @@
+void updateWifiCreds() {
+    ssid = (char*) "YYY";
+    password = (char*) "ZZZ";
+};
