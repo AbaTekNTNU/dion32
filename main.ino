@@ -71,6 +71,9 @@ struct Packet
     byte tertiary_blue;
     uint32_t tertiary;
 
+    uint32_t activeColors[];
+    byte activeColorsLength;
+
     int totalLeds;
     bool mirror;
 
@@ -98,9 +101,12 @@ struct Packet
         secondary = leds.Color(secondary_red, secondary_green, secondary_blue);
         tertiary = leds.Color(tertiary_red, tertiary_green, tertiary_blue);
 
-        mirror = direction = DIRECTION_CENTER_OUT || DIRECTION_CENTER_IN;
+        activeColorsLength = getNumColors(primary, secondary, tertiary);
+
+        mirror = direction == DIRECTION_CENTER_OUT || direction == DIRECTION_CENTER_IN;
+        totalLeds = numLeds;
         totalLeds = mirror ? totalLeds / 2 : totalLeds;
-    }
+   }
 
     int translateCoord(int led) {
         led = (led + phase) % totalLeds;
@@ -126,6 +132,11 @@ struct Packet
 
     void setColor(int led, int r, int g, int b, int w) {
         setColor(led, leds.Color(r, g, b, w));
+    }
+
+    uint32_t getActiveColor(int i) {
+        uint32_t cocols[] = {primary, secondary, tertiary};
+        return cocols[i & activeColorsLength];
     }
 };
 

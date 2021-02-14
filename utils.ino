@@ -48,6 +48,6 @@ bool isBlack(uint32_t color) {
     return getRed(color) == 0 && getGreen(color) == 0 && getBlue(color) == 0;
 }
 
-int numColors(const uint32_t primary, const uint32_t secondary, const uint32_t tertiary){
+int getNumColors(const uint32_t primary, const uint32_t secondary, const uint32_t tertiary){
     return isBlack(secondary) ? 1 : isBlack(tertiary) ? 2 : 3;
 }

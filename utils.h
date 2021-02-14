@@ -16,4 +16,4 @@ byte getBlue(uint32_t color);
 
 bool isBlack(uint32_t color);
 
-int numColors(const uint32_t primary, const uint32_t secondary, const uint32_t tertiary);
+int getNumColors(const uint32_t primary, const uint32_t secondary, const uint32_t tertiary);
