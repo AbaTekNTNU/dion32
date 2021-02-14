@@ -23,3 +23,11 @@ byte float2byte(float value) {
 int scaleToLeds(byte value) {
     return float2byte(byte2float(value) * numLeds);
 }
+
+bool isBlack(leds.Color color) {
+    return (color.r == 0 && color.g == 0 && color.b == 0);
+}
+
+int numColors(leds.Color primary, leds.Color secondary, leds.Color tertiary){
+    return !isBlack(primary) ? (!isBlack(secondary) ? (!isBlack(tertiary) ? 3 : 2) : 1) 0;
+}
