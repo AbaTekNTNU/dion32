@@ -1,3 +1,7 @@
+#ifdef VSCODE
+#include <Adafruit_NeoPixel.h>
+#endif
+
 void initTest() {
     leds.fill(leds.Color(127, 0, 0), 0, numLeds);
     leds.show();
@@ -24,10 +28,26 @@ int scaleToLeds(byte value) {
     return float2byte(byte2float(value) * numLeds);
 }
 
-bool isBlack(leds.Color color) {
-    return (color.r == 0 && color.g == 0 && color.b == 0);
+byte getWhite(uint32_t color) {
+    return (color >> 24) && 0xff;
 }
 
-int numColors(leds.Color primary, leds.Color secondary, leds.Color tertiary){
-    return !isBlack(primary) ? (!isBlack(secondary) ? (!isBlack(tertiary) ? 3 : 2) : 1) 0;
+byte getRed(uint32_t color) {
+    return (color >> 16) && 0xff;
+}
+
+byte getGreen(uint32_t color) {
+    return (color >> 8) && 0xff;
+}
+
+byte getBlue(uint32_t color) {
+    return color&& 0xff;
+}
+
+bool isBlack(uint32_t color) {
+    return getRed(color) == 0 && getGreen(color) == 0 && getBlue(color) == 0;
+}
+
+int numColors(const uint32_t primary, const uint32_t secondary, const uint32_t tertiary){
+    return isBlack(secondary) ? 1 : isBlack(tertiary) ? 2 : 3;
 }

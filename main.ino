@@ -3,12 +3,47 @@
 #define ESP_PLATFORM // tell Artnet.h we are using esp32 and include correct wifi library
 #include <Artnet.h>
 #include <Adafruit_NeoPixel.h>
+#include "utils.h"
+
 
 #ifdef VSCODE // when building arduino, all ino files are automatically included, this is just a fix for vs code
-#include "utils.ino"
 #include "mode_raw.ino"
 #include "wifi-creds.ino"
 #endif
+
+// Config Options
+// Rename "wifi-creds.ino-example" to "wifi-creds.ino" and add your credentials into the updateWifiCreds() function
+char* ssid;
+char* password;
+
+IPAddress ip(192, 168, 1, 5);
+IPAddress gateway(192, 168, 1, 1);
+IPAddress subnet(255, 255, 255, 0);
+
+const int startUniverse = 0;
+const int numLeds = 120;
+
+
+// static
+const byte dataPin = 13;
+
+const byte DIRECTION_POSITIVE = 0;
+const byte DIRECTION_CENTER_OUT = 1;
+const byte DIRECTION_NEGATIVE = 2;
+const byte DIRECTION_CENTER_IN = 3;
+
+const byte MODE_RESET = 0;
+const byte MODE_STATIC = 1;
+const byte MODE_ROTATE = 2;
+const byte MODE_BLOCKS = 3;
+const byte MODE_SPARCLE = 4;
+const byte MODE_WAVE = 5;
+const byte MODE_PUSHER = 6;
+const byte MODE_PINGPONG = 7;
+const byte MODE_RAW = 255;
+
+Adafruit_NeoPixel leds = Adafruit_NeoPixel(numLeds, dataPin, NEO_GRB + NEO_KHZ800);
+ArtnetWiFiReceiver artnet;
 
 struct Packet
 {
@@ -39,7 +74,7 @@ struct Packet
     int totalLeds;
     bool mirror;
 
-    Packet(byte data[]) {
+    Packet(const byte* data) {
         size = scaleToLeds(data[0]);
         groups = data[1];
         phase = scaleToLeds(data[2]);
@@ -103,46 +138,11 @@ void mode_wave(Packet packet);
 void mode_pusher(Packet packet);
 void mode_pingpong(Packet packet);
 
-// Config Options
-// Rename "wifi-creds.ino-example" to "wifi-creds.ino" and add your credentials into the updateWifiCreds() function
-char* ssid;
-char* password;
-
-IPAddress ip(192, 168, 1, 5);
-IPAddress gateway(192, 168, 1, 1);
-IPAddress subnet(255, 255, 255, 0);
-
-const int startUniverse = 0;
-const int numLeds = 120;
-
-
-// static
-const byte dataPin = 13;
-
-const byte DIRECTION_POSITIVE = 0;
-const byte DIRECTION_CENTER_OUT = 1;
-const byte DIRECTION_NEGATIVE = 2;
-const byte DIRECTION_CENTER_IN = 3;
-
-const byte MODE_RESET = 0;
-const byte MODE_STATIC = 1;
-const byte MODE_ROTATE = 2;
-const byte MODE_BLOCKS = 3;
-const byte MODE_SPARCLE = 4;
-const byte MODE_WAVE = 5;
-const byte MODE_PUSHER = 6;
-const byte MODE_PINGPONG = 7;
-const byte MODE_RAW = 255;
-
 
 typedef void (*ModeFunction) (Packet packet);
-const ModeFunction modes[] = {mode_reset, mode_static, mode_rotate, mode_blocks, mode_sparcle, mode_wave, mode_pusher, mode_pingpong};
+ModeFunction modes[] = {mode_reset, mode_static, mode_rotate, mode_blocks, mode_sparcle, mode_wave, mode_pusher, mode_pingpong};
 
 int mode = 0;
-
-
-Adafruit_NeoPixel leds = Adafruit_NeoPixel(numLeds, dataPin, NEO_GRB + NEO_KHZ800);
-ArtnetWiFiReceiver artnet;
 
 void setup() {
     Serial.begin(115200);
@@ -170,8 +170,6 @@ void loop() {
     artnet.parse();  // check if artnet packet has come and execute callback
 }
 
-
-
 void dmx(const uint32_t universe, const byte* data, const uint16_t length) {
     if (universe == startUniverse) {
         mode = data[0];
@@ -190,25 +188,7 @@ void dmx(const uint32_t universe, const byte* data, const uint16_t length) {
         byte empty[sizeof(Packet)] = {};
         data = empty;
     }
-    Packet packet = {};
-
-    packet.size = data[0];
-    packet.groups = data[1];
-    packet.phase = data[2];
-    packet.spacing = data[3];
-    packet.state = data[4];
-    packet.colorBlending = data[5];
-    packet.speed = data[6];
-    packet.direction = data[7];
-    packet.primary_red = data[8];
-    packet.primary_green = data[9];
-    packet.primary_blue = data[10];
-    packet.secondary_red = data[11];
-    packet.secondary_green = data[12];
-    packet.secondary_blue = data[13];
-    packet.tertiary_red = data[14];
-    packet.tertiary_green = data[15];
-    packet.tertiary_blue = data[16];
+    Packet packet = Packet(data);
 
     if (mode >= sizeof(modes)/sizeof(*modes) && mode != MODE_RAW) {
         Serial.print("Got invalid mode ");
@@ -218,6 +198,6 @@ void dmx(const uint32_t universe, const byte* data, const uint16_t length) {
         Serial.println(" or equal 255 for raw mode.");
         mode = MODE_RESET;
     }
-    ModeFunction modeFunc = modes[mode];
+    ModeFunction modeFunc = (ModeFunction) modes[mode];
     modeFunc(packet);
 }
