@@ -179,13 +179,11 @@ void dmx(const uint32_t universe, const byte* data, const uint16_t length) {
         raw_mode(universe, data, length - 1);
         return;
     }
-    if (length - 1 != sizeof(Packet)) {
-        Serial.print("Invalid data length for non-raw mode. Exptected ");
-        Serial.print(sizeof(Packet));
-        Serial.print(" bytes, but got ");
+    if (length != 18) {
+        Serial.print("Invalid data length for non-raw mode. Exptected 18 bytes, but got ");
         Serial.println(length);
         mode = MODE_RESET;
-        byte empty[sizeof(Packet)] = {};
+        byte empty[18 - 1] = {};
         data = empty;
     }
     Packet packet = Packet(data);

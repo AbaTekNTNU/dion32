@@ -17,7 +17,7 @@ void initTest() {
 }
 
 float byte2float(byte value) {
-    return value / (float) 255;
+    return ((float) value) / (float) 255.0;
 }
 
 byte float2byte(float value) {
@@ -25,7 +25,7 @@ byte float2byte(float value) {
 }
 
 int scaleToLeds(byte value) {
-    return float2byte(byte2float(value) * numLeds);
+    return byte2float(value) * numLeds;
 }
 
 byte getWhite(uint32_t color) {
