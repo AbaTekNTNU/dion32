@@ -4,7 +4,7 @@ import math
 
 ip = '192.168.1.5'
 delay = 25
-delay = 25
+#delay = 5
 leds = 120
 dim_min = 0
 dim_max = 0.5
@@ -42,14 +42,14 @@ async def raw_wave():
 
 async def test_static(chan):
 	mode = 1
-	leds = 6
+	leds = 16
 	group = 3
 	phase = 3
 	spacing = 15 
 	state_handling = 0
 	color_blending = 0
 	speed = 0
-	direction = 3
+	direction = 0
 	pr = 20
 	pg = 0
 	pb = 0
