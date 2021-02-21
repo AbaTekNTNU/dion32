@@ -68,33 +68,48 @@ async def test_reset(chan):
 	await chan.wait_till_fade_complete()
 
 async def test2(chan):
-	num = 1
+	b1 = Blob()
+	b1.w = 5
+	b1.r = 50
+	b2 = Blob()
+	b2.x = 10
+	b2.w = 5
+	b2.g = 50
+	b3 = Blob()
+	b3.x = 13
+	b3.w = 3
+	b3.b = 50
 
-	x = 0
-	w = 5
-	r = 0
-	g = 0
-	b = 100
-	mode = 0
-	mode_data = 0
-
-	data = [num, x & 0xff << 8, x & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data] 
-	data = [num, x & 0xff << 8, x & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data, (x+10) & 0xff << 8, (x+10) & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data] 
-	#chan.add_fade(data + data2, 0)
+	data = toChans(b1, b2, b3)
+	print(data)
+	print(len(data))
 	chan.add_fade(data, 0)
-	print('length:', len(data))
 	await chan.wait_till_fade_complete()
-	return
+
+	b1.x += 100
+	b2.x += 100
+	b3.x += 100
+	data = toChans(b1, b2, b3)
 	chan.add_fade(data, 5000)
 	await chan.wait_till_fade_complete()
 
-	x = 115
-	
-	data = [num, x & 0xff << 8, x & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data] 
-	data = [num, x & 0xff << 8, x & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data] 
-	chan.add_fade(data, 10000)
-	await chan.wait_till_fade_complete()
+class Blob:
+	x = 0
+	w = 0
+	r = 0
+	g = 0
+	b = 0
+	mode = 0
+	data = 0
 
+	def toBytes(self):
+		return [self.x & 0xff << 8, self.x & 0xff, self.w & 0xff << 8, self.w & 0xff, self.r, self.g, self.b, self.mode, self.data]
+
+def toChans(*blobs):
+	total = list()
+	for b in blobs:
+		total += b.toBytes()
+	return [len(blobs), *total]
 
 async def main():
 	if False:
@@ -104,7 +119,7 @@ async def main():
 	await node.start()
 	universe = node.add_universe(0)
 #	channel = universe.add_channel(start=1, width=18)
-	channel = universe.add_channel(start=1, width= 1 + 2*9)
+	channel = universe.add_channel(start=1, width= 1 + 3*9)
 
 #	await test_reset(channel)
 #	await test_static(channel)

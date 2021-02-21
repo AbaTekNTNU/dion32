@@ -183,17 +183,28 @@ void loop() {
 
 void dmx(const uint32_t universe, const byte* data, const uint16_t length) {
     mode = data[0];
+    byte blobSize = 9;
     if (mode == MODE_RAW) {
         raw_mode(universe, data + 1, length - 1);
         return;
     }
+    for(int i = 0; i < length; i += 1) {
+        Serial.print("i: ");
+        Serial.print(i);
+        Serial.print(", value: ");
+        Serial.println(data[i]);
+    }
+    uint16_t l = ((length-1) / blobSize) * blobSize;
+    if (l > mode * blobSize) {
+        l = mode * blobSize;
+    }
     leds.clear();
-    for(int i = 1; i < length; i += 9) {
+    for(int i = 0; i < l; i += blobSize) {
         Serial.print("\nRunning data i: ");
         Serial.print(i);
         Serial.print(", of length: ");
         Serial.println(length);
-        draw(data + i);
+        draw(data + i + 1);
     }
     leds.show();
 }
