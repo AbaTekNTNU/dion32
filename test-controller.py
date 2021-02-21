@@ -67,6 +67,35 @@ async def test_reset(chan):
 	chan.add_fade([0]*18, 0)
 	await chan.wait_till_fade_complete()
 
+async def test2(chan):
+	num = 1
+
+	x = 0
+	w = 5
+	r = 0
+	g = 0
+	b = 100
+	mode = 0
+	mode_data = 0
+
+	data = [num, x & 0xff << 8, x & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data] 
+	data = [num, x & 0xff << 8, x & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data, (x+10) & 0xff << 8, (x+10) & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data] 
+	#chan.add_fade(data + data2, 0)
+	chan.add_fade(data, 0)
+	print('length:', len(data))
+	await chan.wait_till_fade_complete()
+	return
+	chan.add_fade(data, 5000)
+	await chan.wait_till_fade_complete()
+
+	x = 115
+	
+	data = [num, x & 0xff << 8, x & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data] 
+	data = [num, x & 0xff << 8, x & 0xff, w & 0xff << 8, w & 0xff, r, g, b, mode, mode_data] 
+	chan.add_fade(data, 10000)
+	await chan.wait_till_fade_complete()
+
+
 async def main():
 	if False:
 		await raw_wave()
@@ -74,12 +103,14 @@ async def main():
 	node = ArtNetNode(ip)
 	await node.start()
 	universe = node.add_universe(0)
-	channel = universe.add_channel(start=1, width=18)
+#	channel = universe.add_channel(start=1, width=18)
+	channel = universe.add_channel(start=1, width= 1 + 2*9)
 
 #	await test_reset(channel)
-	await test_static(channel)
+#	await test_static(channel)
 #	await raw_wave()
 #	await test_reset(channel)
+	await test2(channel)
 	print("done")
 
 

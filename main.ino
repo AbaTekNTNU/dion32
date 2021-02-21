@@ -182,31 +182,38 @@ void loop() {
 }
 
 void dmx(const uint32_t universe, const byte* data, const uint16_t length) {
-    if (universe == startUniverse) {
-        mode = data[0];
-    }
-    data = data + sizeof(byte); // shift by one to skip first "mode" byte
+    mode = data[0];
     if (mode == MODE_RAW) {
-        raw_mode(universe, data, length - 1);
+        raw_mode(universe, data + 1, length - 1);
         return;
     }
-    if (length != 18) {
-        Serial.print("Invalid data length for non-raw mode. Exptected 18 bytes, but got ");
+    leds.clear();
+    for(int i = 1; i < length; i += 9) {
+        Serial.print("\nRunning data i: ");
+        Serial.print(i);
+        Serial.print(", of length: ");
         Serial.println(length);
-        mode = MODE_RESET;
-        byte empty[18 - 1] = {};
-        data = empty;
+        draw(data + i);
     }
-    Packet packet = Packet(data);
+    leds.show();
+}
 
-    if (mode >= sizeof(modes)/sizeof(*modes) && mode != MODE_RAW) {
-        Serial.print("Got invalid mode ");
-        Serial.print(mode);
-        Serial.print(". Mode needs to be less than ");
-        Serial.print(sizeof(modes)/sizeof(*modes));
-        Serial.println(" or equal 255 for raw mode.");
-        mode = MODE_RESET;
-    }
-    ModeFunction modeFunc = (ModeFunction) modes[mode];
-    modeFunc(packet);
+void draw(const byte* data) {
+    const uint16_t x = (data[0]<<8) | data[1];
+    const uint16_t width = (data[2] << 8) | data[3];
+    const byte r = data[4];
+    const byte g = data[5];
+    const byte b = data[6];
+    const byte mode = data[7];
+    const byte mode_data = data[8];
+
+    const uint32_t color = leds.Color(r,g,b);
+
+    leds.fill(color, x, width);
+    Serial.print("Drawing color: ");
+    Serial.print(color);
+    Serial.print(", x: ");
+    Serial.print(x);
+    Serial.print(", w: ");
+    Serial.println(width);
 }
