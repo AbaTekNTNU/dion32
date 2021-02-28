@@ -4,16 +4,24 @@
 
 void initTest() {
     leds.fill(leds.Color(127, 0, 0), 0, numLeds);
+    leds2.fill(leds.Color(127, 0, 0), 0, numLeds);
     leds.show();
+    leds2.show();
     delay(500);
     leds.fill(leds.Color(0, 127, 0), 0, numLeds);
+    leds2.fill(leds.Color(0, 127, 0), 0, numLeds);
     leds.show();
+    leds2.show();
     delay(500);
     leds.fill(leds.Color(0, 0, 127), 0, numLeds);
+    leds2.fill(leds.Color(0, 0, 127), 0, numLeds);
     leds.show();
+    leds2.show();
     delay(500);
     leds.clear();
+    leds2.clear();
     leds.show();
+    leds2.show();
 }
 
 float byte2float(byte value) {
