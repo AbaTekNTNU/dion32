@@ -34,6 +34,7 @@ const int numLeds = 120;
 
 // static
 const byte dataPin = 13;
+const byte dataPin2 = 12;
 
 const byte DIRECTION_POSITIVE = 0;
 const byte DIRECTION_CENTER_OUT = 1;
@@ -51,6 +52,7 @@ const byte MODE_PINGPONG = 7;
 const byte MODE_RAW = 255;
 
 Adafruit_NeoPixel leds = Adafruit_NeoPixel(numLeds, dataPin, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel leds2 = Adafruit_NeoPixel(numLeds, dataPin2, NEO_GRB + NEO_KHZ800);
 //ArtnetWiFiReceiver artnet;
 ArtnetReceiver artnet;
 
@@ -242,6 +244,7 @@ void dmx(const uint32_t universe, const byte* data, const uint16_t length) {
         l = mode * blobSize;
     }
     leds.clear();
+    leds2.clear();
     for(int i = 0; i < l; i += blobSize) {
         Serial.print("\nRunning data i: ");
         Serial.print(i);
@@ -250,6 +253,7 @@ void dmx(const uint32_t universe, const byte* data, const uint16_t length) {
         draw(data + i + 1);
     }
     leds.show();
+    leds2.show();
 }
 
 void draw(const byte* data) {
@@ -264,6 +268,7 @@ void draw(const byte* data) {
     const uint32_t color = leds.Color(r,g,b);
 
     leds.fill(color, x, width);
+    leds2.fill(color, x, width);
     Serial.print("Drawing color: ");
     Serial.print(color);
     Serial.print(", x: ");
