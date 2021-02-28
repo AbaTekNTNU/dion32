@@ -1,10 +1,18 @@
-#include <Arduino.h>
-#define ARTNET_ENABLE_WIFI // tell Artnet.h we are using wifi
-#define ESP_PLATFORM // tell Artnet.h we are using esp32 and include correct wifi library
-#include <Artnet.h>
+// #include <Arduino.h>
+// #define ARTNET_ENABLE_WIFI // tell Artnet.h we are using wifi
+#ifdef VSCODE
+//#define ESP_PLATFORM // tell Artnet.h we are using esp32 and include correct wifi library
+#endif
+#define ARTNET_ENABLE_ETHER
+#undef ESP_PLATFORM
+
+#include "artnet/ArtNet.h"
+//#include <Artnet.h>
 #include <Adafruit_NeoPixel.h>
 #include "utils.h"
-
+//#include "Ethernet.h"
+#include <EthernetENC.h>
+#include <SPI.h>
 
 #ifdef VSCODE // when building arduino, all ino files are automatically included, this is just a fix for vs code
 #include "mode_raw.ino"
@@ -43,7 +51,8 @@ const byte MODE_PINGPONG = 7;
 const byte MODE_RAW = 255;
 
 Adafruit_NeoPixel leds = Adafruit_NeoPixel(numLeds, dataPin, NEO_GRB + NEO_KHZ800);
-ArtnetWiFiReceiver artnet;
+//ArtnetWiFiReceiver artnet;
+ArtnetReceiver artnet;
 
 struct Packet
 {
@@ -160,20 +169,54 @@ void setup() {
 
     // WiFi stuff
     updateWifiCreds();
-    WiFi.begin(ssid, password);
-    WiFi.config(ip, gateway, subnet);
-    while (WiFi.status() != WL_CONNECTED) {
-        Serial.print(".");
-        delay(500);
+    //WiFi.begin(ssid, password);
+    //WiFi.config(ip, gateway, subnet);
+    //while (WiFi.status() != WL_CONNECTED) {
+    //    Serial.print(".");
+    //    delay(500);
+    //}
+    //Serial.print("WiFi connected, IP = ");
+    //Serial.println(WiFi.localIP());
+    
+    Serial.println(" - Starting....");
+    byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+    Ethernet.init(5);
+    Serial.println(" - Beginning....");
+    Ethernet.begin(mac, ip);
+    Serial.println(" - Checking HW status....");
+    if (Ethernet.hardwareStatus() == EthernetNoHardware) {
+        Serial.println("Ethernet shield was not found. Sorry, can't run without hardware. :(");
+        while (true) {
+            delay(1); // do nothing, no point running without Ethernet hardware
+        }
     }
-    Serial.print("WiFi connected, IP = ");
-    Serial.println(WiFi.localIP());
+    Serial.println(" - Checking Link status....");
+    if (Ethernet.linkStatus() == LinkOFF) {
+        delay(500);
+        if (Ethernet.linkStatus() == LinkOFF) {
+            Serial.println("Ethernet cable is not connected.");
+            while (true) {
+                delay(1); // do nothing, no point running without Ethernet hardware
+            }
+        }
+    }
+    Serial.print(" - Ethernet connected, IP = ");
+    Serial.println(Ethernet.localIP());
+
+    Serial.println(" - Starting artnet...");
 
     artnet.begin();
 
+    Serial.println(" - Subscribing artnet...");
+
     artnet.subscribe(dmx);
 
+    Serial.println(" - Leds beginning artnet...");
+
     leds.begin();
+
+    Serial.println(" - Leds initing...");
+
     initTest();
 }
 
