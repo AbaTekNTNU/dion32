@@ -93,6 +93,7 @@ async def test2(chan):
 	chan.add_fade(data, 5000)
 	await chan.wait_till_fade_complete()
 
+
 class Blob:
 	x = 0
 	w = 0
@@ -128,6 +129,17 @@ async def main():
 	await test2(channel)
 	print("done")
 
+	old = node
+	node = ArtNetNode(ip)
+	node._socket = old._socket
+	await node.start()
+	universe = node.add_universe(0)
+	channel = universe.add_channel(start=1, width= 1 + 3*9)
+	await test2(channel)
+	print("done")
+
+
 
 loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
+

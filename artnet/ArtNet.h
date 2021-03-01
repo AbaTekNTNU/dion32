@@ -587,6 +587,9 @@ namespace arx {
                 stream.begin(recv_port);
                 this->Receiver_<S>::attach(stream, subscribe_net, subscribe_subnet);
             }
+            void stop() {
+                stream.stop();   
+            }
         };
     }  // namespace artnet
 }  // namespace arx

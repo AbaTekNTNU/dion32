@@ -13,6 +13,7 @@ void raw_mode(const uint32_t universe, const uint8_t* data, const uint16_t lengt
     leds.show();
   }
   */
+ Serial.println("Raw mode");
 
   // Store which universe has got in
   if ((universe - startUniverse) < maxUniverses)
