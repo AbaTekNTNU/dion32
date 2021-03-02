@@ -1,4 +1,6 @@
 #define UIPETHERNET_DEBUG_UDP
+// #define RAW
+#define ETHERNET_RESET_SOCKET
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 //#define WIFI
@@ -32,19 +34,19 @@
 char *ssid;
 char *password;
 
-IPAddress ip(192, 168, 1, 5);
-IPAddress gateway(192, 168, 1, 1);
+IPAddress ip(13, 37, 69, 1);
+IPAddress gateway(10, 0, 0, 22);
 IPAddress subnet(255, 255, 255, 0);
 
 const int startUniverse = 0;
-const int numLeds = 360;
+const int numLeds = 300;
 
 // static
 const byte dataPin = 13;
-const byte dataPin2 = 12; // ledstrip uses backup
+const byte dataPin2 = 33; // ledstrip uses backup
 
-Adafruit_NeoPixel leds = Adafruit_NeoPixel(numLeds, dataPin, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel leds2 = Adafruit_NeoPixel(numLeds, dataPin2, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel leds = Adafruit_NeoPixel(numLeds, dataPin, NEO_RGB + NEO_KHZ800);
+Adafruit_NeoPixel leds2 = Adafruit_NeoPixel(numLeds, dataPin2, NEO_RGB + NEO_KHZ800);
 
 #ifdef WIFI
 ArtnetWiFiReceiver artnet;
@@ -78,16 +80,13 @@ void setup()
     byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
     Ethernet.init(5);
     Serial.println(" - Ethernet: Beginning...");
-    Ethernet.begin(mac, ip);
+    // Ethernet.begin(mac, ip);
+    Ethernet.begin(mac, ip, gateway, gateway, subnet);
     Serial.println(" - Ethernet: Checking HW status....");
     if (Ethernet.hardwareStatus() == EthernetNoHardware)
     {
         Serial.println("Ethernet shield was not found. Sorry, can't run without hardware. :(");
-
-        while (true)
-        {
-            delay(1); // do nothing, no point running without Ethernet hardware
-        }
+        playEthernetModuleError();
     }
     Serial.println(" - Ethernet: Checking Link status....");
     if (Ethernet.linkStatus() == LinkOFF)
@@ -96,14 +95,15 @@ void setup()
         if (Ethernet.linkStatus() == LinkOFF)
         {
             Serial.println("Ethernet cable is not connected.");
-            while (true)
-            {
-                delay(1); // do nothing, no point running without Ethernet hardware
-            }
+            playEthernetCableError();
         }
     }
     Serial.print(" - Ethernet connected, IP = ");
     Serial.println(Ethernet.localIP());
+    Serial.print(" - Ethernet subnet: ");
+    Serial.println(Ethernet.subnetMask());
+    Serial.print(" - Ethernet gateway: ");
+    Serial.println(Ethernet.gatewayIP());
 
 #endif
 
@@ -118,6 +118,9 @@ void setup()
     Serial.println(" - Leds: Beginning...");
 
     leds.begin();
+    leds2.begin();
+    leds.clear();
+    leds2.clear();
 
     Serial.println(" - Leds: Success, playing animation....");
 
@@ -136,6 +139,7 @@ void dmx(const uint32_t universe, const byte *data, const uint16_t length)
     Serial.println("Running dmx callback");
 
 #ifndef WIFI
+#ifdef ETHERNET_RESET_SOCKET
     // The EthernetENC library seems to have a problem with UDP sockets.
     // When the first message from the (ip, port) pair is received the
     // socket gets locked to only receiving packets from that (ip, port).
@@ -145,14 +149,14 @@ void dmx(const uint32_t universe, const byte *data, const uint16_t length)
     artnet.begin();
     Serial.println("Restarted socket done.");
 #endif
+#endif
+
+#ifdef RAW
+    raw_mode2(universe, data, length);
+#else
 
     int numBlobs = data[0];
     byte blobSize = 9;
-    if (numBlobs == MODE_RAW)
-    {
-        raw_mode(universe, data + 1, length - 1);
-        return;
-    }
     for (int i = 0; i < length; i += 1)
     {
         Serial.print("i: ");
@@ -177,6 +181,8 @@ void dmx(const uint32_t universe, const byte *data, const uint16_t length)
     }
     leds.show();
     leds2.show();
+
+#endif
     Serial.println("Done running dmx callback");
 }
 
@@ -190,16 +196,55 @@ const byte MODE_SPARKLE = 5;
 void draw(const byte *data)
 {
     const uint16_t x = (data[0] << 8) | data[1];
-    const uint16_t width = (data[2] << 8) | data[3];
+    const uint16_t w = (data[2] << 8) | data[3];
     const byte r = data[4];
     const byte g = data[5];
     const byte b = data[6];
     const byte mode = data[7];
     const byte mode_data = data[8];
 
-    for (uint16_t i = x; i < x + width; i += 1)
+    switch (mode)
     {
-        addColor(i, r, g, b, ((float)i) / ((float)width));
+    case MODE_FADE_RIGHT_LEFT:
+    case MODE_FADE_LEFT_RIGHT:
+    case MODE_FADE_MIDDLE_OUT:
+    case MODE_FADE_OUT_MIDDLE:
+    {
+        boolean negative = (mode == MODE_FADE_RIGHT_LEFT) || (mode == MODE_FADE_OUT_MIDDLE);
+        boolean mirror = (mode == MODE_FADE_MIDDLE_OUT) || (mode == MODE_FADE_OUT_MIDDLE);
+        int width = mirror ? w / 2 : w;
+
+        for (uint16_t i = x; i < x + width; i += 1)
+        {
+            float opacity = ((float)(i - x + 1)) / ((float)width);
+            addColor(x, i, x + width, r, g, b, opacity, negative, mirror);
+        }
+        break;
+    }
+    case MODE_FLAME:
+        Serial.println("Flame mode");
+        break;
+    case MODE_SPARKLE:
+        Serial.println("Sparkle mode");
+        break;
+    }
+}
+
+void addColor(int start, int i, int end, byte r, byte g, byte b, float opacity, boolean negative, byte mirror)
+{
+    const int width = end - start;
+    if (negative)
+    {
+        i = end - (i - start);
+    }
+    addColor(i, r, g, b, opacity);
+    if (mirror)
+    {
+        start += width - 1;
+        i += width - 1;
+        end += width - 1;
+        i = end - (i - start);
+        addColor(i, r, g, b, opacity);
     }
 }
 
@@ -207,9 +252,9 @@ void addColor(uint16_t n, byte r, byte g, byte b, float opacity)
 {
     uint32_t cur = leds.getPixelColor(n);
 
-    uint16_t old_r = 0xff << 16 & cur;
-    uint16_t old_g = 0xff << 8 & cur;
-    uint16_t old_b = 0xff & cur;
+    byte old_r = (0xff << 16 & cur) >> 16;
+    byte old_g = (0xff << 8 & cur) >> 8;
+    byte old_b = 0xff & cur;
 
     r = (byte)(((float)r) * opacity);
     r = min(r + old_r, 255);
@@ -225,7 +270,17 @@ void addColor(uint16_t n, byte r, byte g, byte b, float opacity)
     Serial.print(", g:");
     Serial.print(g);
     Serial.print(", b:");
-    Serial.println(b);
+    Serial.print(b);
+
+    Serial.print(", old; r:");
+    Serial.print(old_r);
+    Serial.print(", g:");
+    Serial.print(old_g);
+    Serial.print(", b:");
+    Serial.print(old_b);
+
+    Serial.print(", cur: ");
+    Serial.println(cur);
 
     uint32_t color = leds.Color(r, g, b);
     leds.setPixelColor(n, color);

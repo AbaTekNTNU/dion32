@@ -11,6 +11,11 @@
         "unordered_set": "cpp",
         "vector": "cpp",
         "initializer_list": "cpp",
-        "valarray": "cpp"
-    }
+        "valarray": "cpp",
+        "__bit_reference": "cpp",
+        "algorithm": "cpp",
+        "ios": "cpp",
+        "*.tcc": "cpp"
+    },
+    "python.pythonPath": "/usr/bin/python3"
 }

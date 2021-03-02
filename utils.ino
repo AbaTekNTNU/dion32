@@ -49,6 +49,7 @@ void error(int num)
 {
     while (true)
     {
+        num = 5;
         leds.fill(leds.Color(50, 0, 0), 0, num);
         leds2.fill(leds.Color(50, 0, 0), 0, num);
         leds.show();
