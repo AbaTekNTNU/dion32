@@ -47,21 +47,17 @@ void playWifiNotConnectedError()
 
 void error(int num)
 {
-    while (true)
-    {
-        num = 5;
-        leds.fill(leds.Color(50, 0, 0), 0, num);
-        leds2.fill(leds.Color(50, 0, 0), 0, num);
-        leds.show();
-        leds2.show();
-        delay(500);
+    leds.fill(leds.Color(50, 0, 0), 0, num);
+    leds2.fill(leds.Color(50, 0, 0), 0, num);
+    leds.show();
+    leds2.show();
+    delay(500);
 
-        leds.clear();
-        leds2.clear();
-        leds.show();
-        leds2.show();
-        delay(500);
-    }
+    leds.clear();
+    leds2.clear();
+    leds.show();
+    leds2.show();
+    delay(500);
 }
 
 float byte2float(byte value)
@@ -108,4 +104,17 @@ int getNumColors(const uint32_t primary, const uint32_t secondary, const uint32_
 {
     return isBlack(secondary) ? 1 : isBlack(tertiary) ? 2
                                                       : 3;
+}
+
+void sendUDP(IPAddress ip)
+{
+    return;
+    EthernetUDP udp;
+
+    Serial.println(" - Ethernet: Sending UDP packet to gateway to advertise IP...");
+    udp.begin(1337);
+    udp.beginPacket(Ethernet.gatewayIP(), 1337);
+    udp.write("Yolo, from Dion lmao.\n");
+    udp.endPacket();
+    Serial.println(" - Ethernet: Packet sent.");
 }

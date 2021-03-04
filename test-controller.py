@@ -5,6 +5,7 @@ import sys
 
 ip = '192.168.1.5'
 ip = '13.37.69.1'
+ip = '10.0.1.1'
 delay = 25
 # delay = 5
 leds = 120

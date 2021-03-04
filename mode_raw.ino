@@ -25,6 +25,14 @@ void raw_mode2(const uint32_t universe, const uint8_t *data, const uint16_t leng
     return;
   }
 
+  for (int i = 0; i < length; i += 1)
+  {
+    Serial.print("i: ");
+    Serial.print(i);
+    Serial.print(", value: ");
+    Serial.println(data[i]);
+  }
+
   Serial.print("Displaying ");
   Serial.print(start);
   Serial.print(" to ");

@@ -1,6 +1,7 @@
 #define UIPETHERNET_DEBUG_UDP
 // #define RAW
-#define ETHERNET_RESET_SOCKET
+// #define ETHERNET_RESET_SOCKET
+#define DEBUG
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 //#define WIFI
@@ -14,6 +15,7 @@
 #else
 
 #include <EthernetENC.h>
+#include <EthernetUdp.h>
 #include <SPI.h>
 #undef ESP_PLATFORM
 #define ARTNET_ENABLE_ETHER
@@ -34,16 +36,18 @@
 char *ssid;
 char *password;
 
-IPAddress ip(13, 37, 69, 1);
+// IPAddress ip(13, 37, 69, 10);
+IPAddress ip(10, 0, 1, 1);
 IPAddress gateway(10, 0, 0, 22);
 IPAddress subnet(255, 255, 255, 0);
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x010}; // ethernet 0xDEADBEEF0000
 
 const int startUniverse = 0;
 const int numLeds = 300;
 
 // static
 const byte dataPin = 13;
-const byte dataPin2 = 33; // ledstrip uses backup
+const byte dataPin2 = 12; // ledstrip uses backup
 
 Adafruit_NeoPixel leds = Adafruit_NeoPixel(numLeds, dataPin, NEO_RGB + NEO_KHZ800);
 Adafruit_NeoPixel leds2 = Adafruit_NeoPixel(numLeds, dataPin2, NEO_RGB + NEO_KHZ800);
@@ -76,27 +80,21 @@ void setup()
     Serial.print("WiFi connected, IP = ");
     Serial.println(WiFi.localIP());
 #else
-
-    byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED};
-    Ethernet.init(5);
+    Ethernet.init(5); // our ethernet module
     Serial.println(" - Ethernet: Beginning...");
     // Ethernet.begin(mac, ip);
     Ethernet.begin(mac, ip, gateway, gateway, subnet);
     Serial.println(" - Ethernet: Checking HW status....");
-    if (Ethernet.hardwareStatus() == EthernetNoHardware)
+    while (Ethernet.hardwareStatus() == EthernetNoHardware)
     {
         Serial.println("Ethernet shield was not found. Sorry, can't run without hardware. :(");
         playEthernetModuleError();
     }
     Serial.println(" - Ethernet: Checking Link status....");
-    if (Ethernet.linkStatus() == LinkOFF)
+    while (Ethernet.linkStatus() == LinkOFF)
     {
-        delay(500);
-        if (Ethernet.linkStatus() == LinkOFF)
-        {
-            Serial.println("Ethernet cable is not connected.");
-            playEthernetCableError();
-        }
+        Serial.println("Ethernet cable is not connected.");
+        playEthernetCableError();
     }
     Serial.print(" - Ethernet connected, IP = ");
     Serial.println(Ethernet.localIP());
@@ -104,6 +102,8 @@ void setup()
     Serial.println(Ethernet.subnetMask());
     Serial.print(" - Ethernet gateway: ");
     Serial.println(Ethernet.gatewayIP());
+
+    sendUDP(gateway);
 
 #endif
 
@@ -136,7 +136,12 @@ const byte MODE_RAW = 255;
 
 void dmx(const uint32_t universe, const byte *data, const uint16_t length)
 {
-    Serial.println("Running dmx callback");
+#ifdef DEBUG
+    Serial.print("Running dmx callback on uni: ");
+    Serial.print(universe);
+    Serial.print(", len: ");
+    Serial.println(length);
+#endif
 
 #ifndef WIFI
 #ifdef ETHERNET_RESET_SOCKET
@@ -155,33 +160,44 @@ void dmx(const uint32_t universe, const byte *data, const uint16_t length)
     raw_mode2(universe, data, length);
 #else
 
-    int numBlobs = data[0];
-    byte blobSize = 9;
-    for (int i = 0; i < length; i += 1)
+    if (universe == 0)
     {
-        Serial.print("i: ");
-        Serial.print(i);
-        Serial.print(", value: ");
-        Serial.println(data[i]);
-    }
-    uint16_t l = ((length - 1) / blobSize) * blobSize;
-    if (l > numBlobs * blobSize)
-    {
-        l = numBlobs * blobSize;
-    }
-    leds.clear();
-    leds2.clear();
-    for (int i = 0; i < l; i += blobSize)
-    {
-        Serial.print("\nRunning data i: ");
-        Serial.print(i);
-        Serial.print(", of length: ");
-        Serial.println(length);
-        draw(data + i + 1);
-    }
-    leds.show();
-    leds2.show();
 
+        int numBlobs = data[0];
+        byte blobSize = 9;
+#ifdef DEBUG
+        for (int i = 0; i < length; i += 1)
+        {
+            Serial.print("i: ");
+            Serial.print(i);
+            Serial.print(", value: ");
+            Serial.println(data[i]);
+            if (i % 9 == 1)
+            {
+                Serial.println();
+            }
+        }
+#endif
+        uint16_t l = ((length - 1) / blobSize) * blobSize;
+        if (l > numBlobs * blobSize)
+        {
+            l = numBlobs * blobSize;
+        }
+        leds.clear();
+        leds2.clear();
+        for (int i = 0; i < l; i += blobSize)
+        {
+#ifdef DEBUG
+            Serial.print("\nRunning data i: ");
+            Serial.print(i);
+            Serial.print(", of length: ");
+            Serial.println(length);
+#endif
+            draw(data + i + 1);
+        }
+        leds.show();
+        leds2.show();
+    }
 #endif
     Serial.println("Done running dmx callback");
 }
@@ -248,8 +264,13 @@ void addColor(int start, int i, int end, byte r, byte g, byte b, float opacity, 
     }
 }
 
-void addColor(uint16_t n, byte r, byte g, byte b, float opacity)
+void addColor(uint16_t num, byte r, byte g, byte b, float opacity)
 {
+    uint32_t n = num % numLeds;
+    while (n < 0)
+    {
+        n += numLeds;
+    }
     uint32_t cur = leds.getPixelColor(n);
 
     byte old_r = (0xff << 16 & cur) >> 16;
@@ -262,6 +283,8 @@ void addColor(uint16_t n, byte r, byte g, byte b, float opacity)
     g = min(g + old_g, 255);
     b = (byte)(((float)b) * opacity);
     b = min(b + old_b, 255);
+
+#ifdef DEBUG
 
     Serial.print("n: ");
     Serial.print(n);
@@ -281,6 +304,8 @@ void addColor(uint16_t n, byte r, byte g, byte b, float opacity)
 
     Serial.print(", cur: ");
     Serial.println(cur);
+
+#endif
 
     uint32_t color = leds.Color(r, g, b);
     leds.setPixelColor(n, color);
