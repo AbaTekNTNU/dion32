@@ -1,7 +1,7 @@
 #define UIPETHERNET_DEBUG_UDP
 // #define RAW
 // #define ETHERNET_RESET_SOCKET
-#define DEBUG
+// #define DEBUG
 
 #define min(a, b) ((a) < (b) ? (a) : (b))
 //#define WIFI
@@ -40,7 +40,7 @@ char *password;
 IPAddress ip(10, 0, 1, 1);
 IPAddress gateway(10, 0, 0, 22);
 IPAddress subnet(255, 255, 255, 0);
-byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x010}; // ethernet 0xDEADBEEF0000
+byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x10}; // ethernet 0xDEADBEEF0000
 
 const int startUniverse = 0;
 const int numLeds = 300;
